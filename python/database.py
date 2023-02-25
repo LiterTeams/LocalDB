@@ -1,6 +1,7 @@
 import json
 import os
-from functools import reduce
+from texttable import Texttable
+from corrector import lowers
 from tabulate import *
 from converter import *
 from error import *
@@ -25,7 +26,7 @@ def create_folder(name:str):
     os.makedirs(name)
 
 
-def create_id_list(obj_id):
+def create_id_list(obj_id) -> list:
     keys = list()
     pre_keys = [key for key in obj_id.split(",")] if "," in obj_id else [key for key in obj_id.split("-")]
 
@@ -55,7 +56,7 @@ class DataBase:
         self.db_name = "Project"
         self.temp_name = "Temp"
 
-        self.version = "Beta 2.0"
+        self.version = "Beta 3.0"
 
         self.db_path = f"{self.directory}/{self.db_name}.{self.format}"
         self.temp_path = f"{self.directory}/{self.temp_name}.{self.format}"
@@ -65,11 +66,16 @@ class DataBase:
         self.__free_id = dict()
         self.temp_category = str()
 
+        self.db_status = False
+
     def start(self):
         status = self.__check_db(path=self.db_path)
-        if status is True:
+        if status:
             self.db_status: True
             print("DataBase Successful Load")
+        else:
+            print("DataBase Error Load")
+            raise KeyError()
 
     def shutdown(self):
         print("Saving Datas...")
@@ -93,7 +99,7 @@ class DataBase:
         self.__temps = load_datas(path=f"{self.directory}/{self.temp_name}-Backup.{self.format}")
         print("DataBase Backup Successful Load")
 
-    def __check_db(self, path):
+    def __check_db(self, path: str):
         if os.path.exists(path):
             print("Loading DataBase...")
             self.__datas = load_datas(path=self.db_path)
@@ -103,9 +109,7 @@ class DataBase:
             self.bd_status = True
             status = True
         else:
-            if input("Create DataBase? [Y/n]:") == "Y":
-                # create_json(path=self.directory,name=self.temp_name)
-                # status = create_db(db_path=self.db_path)
+            if lowers(input("Create DataBase? [Y/n]:")) == "y":
                 if os.path.exists("../jsons") is False:
                     create_folder("../jsons")
                 status = self.__create_db()
@@ -113,104 +117,44 @@ class DataBase:
                 status = False
         return status
 
-    def __check_id(self,category):
-        if category in self.__free_id:
-            free_id = self.__free_id[category].pop() if len(self.__free_id[category]) != 0 else 0
+    def __check_id(self,category: str):
+        if category in self.__free_id and len(self.__free_id[category]) != 0:
+            print(self.__free_id)
+            free_id = self.__free_id[category].pop()
+            return free_id
         else:
-            return 1
-
-        if free_id != 0:
-            return self.__temps["ids"][category].pop()
-        else:
-            all_id = set([item["id"] for item in self.__datas[category]])
-            temporary_id = set([item for item in range(min(all_id), max(all_id) + 1)])
-            result = temporary_id.difference(all_id)
-            if len(result) > 0:
-                return result.pop()
+            all_id = set([item["id"] for item in self.__datas[category]]) if len(self.__datas[category]) > 0 else 0
+            if all_id != 0:
+                temporary_id = set([item for item in range(min(all_id), max(all_id) + 1)])
+                result = temporary_id.difference(all_id)
+                if len(result) > 0:
+                    return result.pop()
+                else:
+                    return max(all_id) + 1
             else:
-                return max(all_id) + 1
+                return 1
 
     def __create_db(self):
-        self.create_category(category="Developers",attributes="id:=int role:=list $title:=str !sites[no-site]:=list !programming-language[no-lang]:=list")
-        self.create_obj(category="Developers",attributes="role:=coder,artist,dnd title:=clyoucker programming-language:=JavaScript,Python sites:=https://vk.com/clyoucker,https://vk.com/litesolidcore")
+        self.__temps["keys"] = dict()
+        self.__temps["complete"] = dict()
+        self.__temps["constants"] = dict()
+        self.__temps["types"] = dict()
+        self.__temps["category"] = list()
+        self.create_category(category="Developers",attributes="role:=list @sites[no-site]:=list !programming-language:=list")
+        self.create_obj(category="Developers",attributes="role:=coder,artist,dnd programming-language:=Python,JavaScript,C++ sites:=https://vk.com/clyoucker,https://vk.com/litesolidcore")
         return True
 
-    #=================== | Func-Create |=================#
+    # =================== | Func-Create |================= #
 
-    def create_category(self,category,attributes):
-        attributes = [item.split(":=") for item in attributes.split(" ")]
-        pre_keys = list(map(lambda item: [elem.split("@")[1] for elem in item if elem.startswith("@")], attributes))
-        pre_complete = list(map(lambda item: [elem.split("!")[1] for elem in item if elem.startswith("!")], attributes))
-        pre_const = list(map(lambda item: [elem.split("$")[1] for elem in item if elem.startswith("$")], attributes))
-        keys = {category: [elem[0] for elem in pre_keys if len(elem) > 0]} if len([elem[0] for elem in pre_keys if len(elem) > 0]) > 0 else None
-        complete = {category:reduce(lambda x,y:dict(x,**y),[{elem[0].split("[")[0]: elem[0].split("[")[1].split("]")[0]} for elem in pre_complete if len(elem) > 0])} if len([{elem[0].split("[")[0]: elem[0].split("[")[1].split("]")[0]} for elem in pre_complete if len(elem) > 0]) > 0 else None
-        const = {category: [elem[0] for elem in pre_const if len(elem) > 0]} if len([elem[0] for elem in pre_const if len(elem) > 0]) > 0 else None
+    def create_category(self,category: str, attributes: str):
+        attributes = normalize_attribute(category=category,attributes=attributes)
 
-        types = dict()
-        for item in attributes:
-            if "@" in item[0]:
-                key = item[0].split("@")[1]
-                types[key] = item[1]
-            elif "!" in item[0]:
-                key = item[0].split("!")[1].split("[")[0]
-                types[key] = item[1]
-            elif "$" in item[0]:
-                key = item[0].split("$")[1]
-                types[key] = item[1]
-            else:
-                types[item[0]] = item[1]
+        self.__temps["keys"][category] = attributes["keys"][category] if attributes["keys"] else tuple()
+        self.__temps["complete"][category] = attributes["complete"][category] if attributes["complete"] else dict()
+        self.__temps["constants"][category] = attributes["constants"][category] if attributes["constants"] else tuple()
 
-        if "keys" in self.__temps:
-            if keys is not None:
-                match self.__temps["keys"]:
-                    case None: self.__temps["keys"] = keys
-                    case _: self.__temps["keys"].update(keys)
-            else:
-                self.__temps["complete"] = dict()
-        else:
-            self.__temps["keys"] = dict()
-            if keys is not None:
-                match self.__temps["keys"]:
-                    case None: self.__temps["keys"] = keys
-                    case _: self.__temps["keys"].update(keys)
-
-        if "complete" in self.__temps:
-            if complete is not None:
-                match self.__temps["complete"]:
-                    case None: self.__temps["complete"] = complete
-                    case _: self.__temps["complete"].update(complete)
-            else:
-                self.__temps["complete"] = dict()
-        else:
-            self.__temps["complete"] = dict()
-            if const is not None:
-                match self.__temps["complete"]:
-                    case None: self.__temps["complete"] = complete
-                    case _: self.__temps["complete"].update(complete)
-
-        if "constants" in self.__temps:
-            if const is not None:
-                match self.__temps["constants"]:
-                    case None: self.__temps["constants"] = const
-                    case _: self.__temps["constants"].update(const)
-            else:
-                self.__temps["constants"] = dict()
-        else:
-            self.__temps["constants"] = dict()
-            if const is not None:
-                match self.__temps["constants"]:
-                    case None: self.__temps["constants"] = const
-                    case _: self.__temps["constants"].update(const)
-
-        if "types" not in self.__temps:
-            self.__temps["types"] = {category: types}
-        else:
-            self.__temps["types"].update({category: types})
-
-        if "category" not in self.__temps:
-            self.__temps["category"] = [category]
-        else:
-            self.__temps["category"].append(category)
+        self.__temps["types"][category] = attributes["types"]
+        self.__temps["category"].append(category)
 
         self.__datas[category] = list()
         self.temp_category = category
@@ -224,47 +168,29 @@ class DataBase:
             types_obj = convert_format(self.__temps["types"][category].copy())
             obj = normalize_obj(pre_obj,types_obj,complete) if complete is not None else normalize_obj(pre_obj,types_obj)
             obj["id"] = self.__check_id(category=category)
-            try:
-                keys = self.__temps["keys"][category]
-                complete = [complete for complete in self.__temps["complete"][category].values()] if category in self.__temps["complete"] else []
-                count = 0
-                while count != len(keys):
-                    for key in keys:
-                        print([item for item in self.__datas[category]])
-                        primary = set([item[key] for item in self.__datas[category]])
-                        if obj[key] not in primary or obj[key] == "NaN" or obj[key] in complete:
-                            count += 1
-                        else:
-                            raise KeyDuplicateError(key)
+            keys = self.__temps["keys"][category]
+            complete = [complete for complete in self.__temps["complete"][category].values()] if category in self.__temps["complete"] else []
 
-                    self.__datas[category].append(obj)
-                    self.__temps["temp_category"] = self.temp_category = category
-                    print(f"Obj [id:{obj['id']} | title:{obj['title']}] Successful Added")
+            for key in keys:
+                if key not in complete and obj[key] == "Null":
+                    raise KeyNull(key)
 
-            except KeyError:
-                self.__datas[category].append(obj)
-                self.__temps["temp_category"] = self.temp_category = category
-                print(f"Obj [id:{obj['id']} | title:{obj['title']}] Successful Added")
+            self.__datas[category].append(obj)
+            self.__temps["temp_category"] = self.temp_category = category
+            print(tabulate(self.__datas[category], headers="keys"))
         else:
             raise KeyError(f"Error Category: [{category}]! --create_obj--")
 
     def create_attribute(self,attributes,category=None):
         category = self.temp_category if category is None or category == "" else category
         if category in self.__temps["category"]:
-            attributes = [item.split(":=") for item in attributes.split(" ")]
-            pre_keys = list(map(lambda item: [elem.split("@")[1] for elem in item if elem.startswith("@")], attributes))
-            pre_complete = list(map(lambda item: [elem.split("!")[1] for elem in item if elem.startswith("!")], attributes))
-            pre_const = list(map(lambda item: [elem.split("$")[1] for elem in item if elem.startswith("$")], attributes))
-            keys = {category: [elem[0] for elem in pre_keys if len(elem) > 0]} if len([elem[0] for elem in pre_keys if len(elem) > 0]) > 0 else None
-            complete = {category: {elem[0].split("[")[0]: elem[0].split("[")[1].split("]")[0]} for elem in pre_complete if len(elem) > 0} if len([{elem[0].split("[")[0]: elem[0].split("[")[1].split("]")[0]} for elem in pre_complete if len(elem) > 0]) > 0 else None
-            const = {category: {elem[0].split("[")[0]: elem[0].split("[")[1].split("]")[0]} for elem in pre_const if len(elem) > 0} if len([{elem[0].split("[")[0]: elem[0].split("[")[1].split("]")[0]} for elem in pre_const if len(elem) > 0]) > 0 else None
+            attributes = normalize_attribute(category=category, attributes=attributes)
 
-            if keys is not None: pass
-            elif complete is not None:
-                key = "".join([item for item in complete[category].keys()])
+            if attributes["complete"][category]:
+                key = "".join([item for item in attributes["complete"][category].keys()])
                 for item in self.__datas[category]:
                     if key not in item:
-                        item[key] = format(format=complete["".join([item for item in complete.keys()])][key])
+                        item[key] = format(format=attributes["complete"][category]["".join([item for item in attributes["complete"][category].keys()])][key])
             elif const is not None:
                 key = "".join([item for item in const[category].keys()])
                 if category in self.__temps["constants"]:
@@ -326,11 +252,11 @@ class DataBase:
                 if pre_complete[0] in types:
                     self.__temps["complete"][category] = complete
                 else:
-                    raise KeyError(f"This Const: [{const}] Not Found In Types! --create_const--")
+                    raise KeyError(f"This Complete: [{complete}] Not Found In Types! --create_complete--")
         else:
             raise KeyError(f"Unknown Category: [{category}]! --create_complete--")
 
-    #===================| Func-Chang |===================#
+    # ===================| Func-Chang |=================== #
 
     def change_obj(self,obj_id,attributes,category=None):
         category = self.temp_category if category is None or category == "" else category
@@ -354,7 +280,7 @@ class DataBase:
         else:
             raise KeyError(f"Category: [{category}] Not Found!")
 
-    #===================| Func-Clear |===================#
+    # ===================| Func-Clear |=================== #
 
     def clear_category(self,category=None):
         category = self.temp_category if category is None or category == "" else category
@@ -381,7 +307,7 @@ class DataBase:
         else:
             raise KeyError(f"Category: [{category}] Not Found!")
 
-    #===================| Func-Del |=====================#
+    # ===================| Func-Del |===================== #
 
     def del_category(self,category):
         category = self.temp_category if category is None or category == "" else category
@@ -456,7 +382,7 @@ class DataBase:
 
     def get_datas(self,category=None):
         category = self.temp_category if category is None or category == "" else category
-        if category in self.__temps["complete"]:
+        if category in self.__temps["category"]:
             return self.__datas[category]
         elif category is None or category == "":
             return self.__datas
@@ -465,7 +391,8 @@ class DataBase:
 
     def print_datas(self,category=None):
         category = self.temp_category if category is None or category == "" else category
-        if category in self.__temps["complete"]:
+        print(self.__temps)
+        if category in self.__temps["category"]:
             print(tabulate(self.__datas[category], headers="keys"))
         elif category is None or category == "":
             for category in self.__datas:
@@ -473,6 +400,12 @@ class DataBase:
         else:
             raise KeyError(f"Category: [{category}] Not Found!")
 
-# db = DataBase()
-# db.start()
-#db.shutdown()
+
+db = DataBase()
+db.start()
+db.create_category(category="Users",attributes="!login:=str !password:=str !email:=str")
+db.create_obj(attributes="title:=clyoucker login:=fox password:=gamemode email:=liter@gmail.com",category="Users")
+db.create_obj(attributes="title:=thunder login:=box password:=streef email:=lether@gmail.com",category="Users")
+db.create_obj(attributes="title:=felix login:=sex password:=minecraft email:=fox@gmail.com",category="Users")
+db.del_obj(obj_id="2",category="Users")
+db.shutdown()

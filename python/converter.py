@@ -1,4 +1,5 @@
 import datetime
+from functools import reduce
 
 
 def format(format,value=None):
@@ -39,7 +40,8 @@ def convert_format(format):
             case "time": format[key] = "time"
             case "date": format[key] = "date"
             case "href": format[key] = "href"
-            case _: format[key] = "NaN"
+            case "nan": format[key] = "NaN"
+            case _: format[key] = "Null"
     return format
 
 
@@ -54,11 +56,40 @@ def normalize_obj(obj,types,auto_complete=None):
             elif types[key] == "data": types[key] = format(format="Date()",value=obj[key])
             elif types[key] == "time": types[key] = format(format="Time()",value=obj[key] if obj[key] != "" else 0)
             elif types[key] == "money": types[key] = obj[key]
-            else: types[key] = "NaN"
+            elif types[key] == "NaN": types[key] = obj[key]
+            else: types[key] = "Null"
         else:
             if auto_complete is not None and key in auto_complete and key != "id":
                 types[key] = auto_complete[key]
             else:
-                types[key] = "NaN"
+                types[key] = "Null"
     return types
 
+
+def normalize_attribute(category: str, attributes: str) -> dict:
+    attributes = "@title[unknown-title]:=str " + attributes if "title" not in attributes else None
+    attributes = "id:=int " + attributes if "id" not in attributes else None
+    attributes = [item.split(":=") for item in attributes.split(" ")]
+    pre_keys = list(map(lambda item: [elem.split("!")[1] for elem in item if elem.startswith("!")], attributes))
+    pre_complete = list(map(lambda item: [elem.split("@")[1] for elem in item if elem.startswith("@")], attributes))
+    pre_const = list(map(lambda item: [elem.split("$")[1] for elem in item if elem.startswith("$")], attributes))
+    keys = {category: tuple([elem[0] for elem in pre_keys if len(elem) > 0])} if len([elem[0] for elem in pre_keys if len(elem) > 0]) > 0 else None
+    complete = {category: reduce(lambda x, y: dict(x, **y),[{elem[0].split("[")[0]: elem[0].split("[")[1].split("]")[0]} for elem in pre_complete if len(elem) > 0])} if len([{elem[0].split("[")[0]: elem[0].split("[")[1].split("]")[0]} for elem in pre_complete if len(elem) > 0]) > 0 else None
+    const = {category: [elem[0] for elem in pre_const if len(elem) > 0]} if len([elem[0] for elem in pre_const if len(elem) > 0]) > 0 else None
+
+    types = dict()
+    for item in attributes:
+        if "!" in item[0]:
+            key = item[0].split("!")[1]
+            types[key] = item[1]
+        elif "@" in item[0]:
+            key = item[0].split("@")[1].split("[")[0]
+            types[key] = item[1]
+        elif "$" in item[0]:
+            key = item[0].split("$")[1]
+            types[key] = item[1]
+        else:
+            types[item[0]] = item[1]
+
+    normalize = {"keys":keys, "complete":complete, "constants":const, "types":types}
+    return normalize

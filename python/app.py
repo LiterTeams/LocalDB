@@ -1,8 +1,6 @@
 from tabulate import *
 from corrector import *
-import database
-
-db = database.DataBase()
+from database import db
 
 
 def start():
@@ -40,14 +38,14 @@ def start():
 
                 case "create.complete":
                     db.create_complete(complete=input("Complete: "),category=input("Category: "))
-                case "del.complete":
+                case "del.complete":\
                     db.del_complete(complete=input("Complete: "),category=input("Category: "))
 
                 case "datas":
-                    datas = db.get_datas(category=input("Category: "))
-                    print(tabulate(datas, headers="keys"))
+                    print(db.get_datas(category=input("Category: ")))
                 case "backup":
                     db.backup()
+                case "load.backup": pass
                 case "stop" | "exit" | "esc":
                     break
                 case _:
