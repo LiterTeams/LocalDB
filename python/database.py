@@ -399,13 +399,3 @@ class DataBase:
                 print(tabulate(self.__datas[category],headers="keys"))
         else:
             raise KeyError(f"Category: [{category}] Not Found!")
-
-
-db = DataBase()
-db.start()
-db.create_category(category="Users",attributes="!login:=str !password:=str !email:=str")
-db.create_obj(attributes="title:=clyoucker login:=fox password:=gamemode email:=liter@gmail.com",category="Users")
-db.create_obj(attributes="title:=thunder login:=box password:=streef email:=lether@gmail.com",category="Users")
-db.create_obj(attributes="title:=felix login:=sex password:=minecraft email:=fox@gmail.com",category="Users")
-db.del_obj(obj_id="2",category="Users")
-db.shutdown()
