@@ -1,0 +1,16 @@
+{
+    "general_directory": "assets",
+    "backup_directory":"backup",
+    "data_directory": "datas",
+    "type_directory": "types",
+    "backup_format": "json",
+    "data_format": "json",
+    "type_format": "json",
+    "data_name": "db_lite.datas",
+    "type_name": "db_lite.types",
+    "experimental": {
+        "data_category": true,
+        "virtual_tree": true
+    },
+    "version": "experimental version 1.0"
+}
