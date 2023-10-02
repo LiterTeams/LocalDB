@@ -16,10 +16,16 @@ def main():
             cmd = command(input("command: "))
             match cmd:
                 case "create.category":
-                    db_app.create_category(category=input("New Category: "), attributes=input("New Attributes: "))
+                    db_app.create_category(category=input("Category: "), attributes=input("Attributes: "))
+                # case "clear.category":
+                #     db_app.clear_category(category=input("Category: "))
+                case "delete.category":
+                    db_app.delete_category(category=input("Category: "))
 
                 case "create.obj":
-                    db_app.create_obj(attributes=input("Attributes: "), category=input("Category: "))
+                    db_app.create_obj(category=input("Category: "), attributes=input("Attributes: "))
+                case "delete.obj":
+                    db_app.delete_obj(category=input("Category: "), obj_id=int(input("Object ID:")))
 
                 case "data":
                     print(db_app.get_datas(category=input("Category: ")))

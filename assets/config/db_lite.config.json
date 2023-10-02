@@ -1,16 +1,28 @@
 {
-    "general_directory": "assets",
-    "backup_directory":"backup",
-    "data_directory": "datas",
-    "type_directory": "types",
-    "backup_format": "json",
-    "data_format": "json",
-    "type_format": "json",
-    "data_name": "db_lite.datas",
-    "type_name": "db_lite.types",
+    "file_directories": {
+        "general": "assets",
+        "backup":"backup",
+        "datas": "datas",
+        "types": "types"
+    },
+    "file_formats": {
+        "backup": "json",
+        "datas": "json",
+        "types": "json"
+    },
+    "file_names": {
+        "datas": "db_lite.datas",
+        "types": "db_lite.types"
+    },
+    "settings": {
+        "lang": "Eng",
+        "use_backup": true,
+        "use_experimental": true
+    },
     "experimental": {
-        "data_category": true,
+        "multiple_category": true,
+        "dynamic_loading": true,
         "virtual_tree": true
     },
-    "version": "experimental version 1.0"
+    "version": "experimental version 1.2"
 }

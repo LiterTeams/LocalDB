@@ -1,6 +1,7 @@
 import os
 import datetime
 import json
+from modules.globals.Errors import NotFoundError
 
 
 def trim(text:str) -> str:
@@ -32,11 +33,11 @@ def _datetime_format_current() -> str:
 
 
 def date_format(date_type:str):
-    if date_type == "Date()":
+    if date_type == "date()":
         return _date_format_current()
-    elif date_type == "Time()":
+    elif date_type == "time()":
         return _time_format_current()
-    elif date_type == "DateTime()":
+    elif date_type == "datetime()":
         return _datetime_format_current()
     return "null"
 
@@ -50,9 +51,20 @@ def find_path(path:str):
     return os.path.exists(path)
 
 
+def get_path_and_folder(path:str):
+    path = path.split("\\")
+    path.pop()
+    folder = path.pop()
+    path = "\\".join(path)
+    return [path, folder]
+
+
 def write_datas(path:str, datas:dict):
-    with open(path, "w") as file:
-        json.dump(datas, file, indent=2, ensure_ascii=False)
+    try:
+        with open(path, "w") as file:
+            json.dump(datas, file, indent=2, ensure_ascii=False)
+    except FileNotFoundError:
+        raise NotFoundError(value=path, function_name="write datas")
 
 
 def create_json(folder_directory:str,file_name:str):
@@ -60,8 +72,15 @@ def create_json(folder_directory:str,file_name:str):
     write_datas(path=path, datas={})
 
 
+def delete_json(folder_directory:str,file_name:str):
+    os.remove(f"{folder_directory}\\{file_name}")
+
+
 def create_folder(folder_directory:str,folder_name:str):
-    os.makedirs(f"{folder_directory}/{folder_name}")
+    try:
+        os.makedirs(f"{folder_directory}\\{folder_name}")
+    except FileNotFoundError:
+        raise NotFoundError(value=folder_name, function_name="create folder")
 
 
 def create_id_list(obj_id) -> list:
@@ -80,3 +99,7 @@ def create_id_list(obj_id) -> list:
         else:
             keys.append(int(key))
     return keys
+
+
+def category_find(new_category:str, old_category:str):
+    return trim(lower(new_category)) if new_category else old_category

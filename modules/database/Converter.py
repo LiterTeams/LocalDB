@@ -4,8 +4,7 @@ from functools import reduce
 
 def _normalize_attribute_keys(category: str, attributes:str | list) -> list:
     if type(attributes) == list:
-        pre_keys = list(map(lambda item: [elem.split("!")[1] for elem in item if elem.startswith("!")], attributes))
-        return list([elem[0] for elem in pre_keys if len(elem) > 0]) if len([elem[0] for elem in pre_keys if len(elem) > 0]) > 0 else []
+        return list(filter(lambda value: value,list(map(lambda item: item[0][1:] if item[0].find("!") != -1 else None, attributes))))
     elif type(attributes) == str:
         attributes = [item.split(":") for item in attributes.split(" ")]
         _normalize_attribute_keys(category, attributes)
@@ -14,7 +13,7 @@ def _normalize_attribute_keys(category: str, attributes:str | list) -> list:
 
 def _normalize_attribute_templates(category: str, attributes:str | list) -> dict:
     if type(attributes) == list:
-        return reduce(lambda key,value: dict(key, **value),[{elem[0]:elem[1].split("=")[1]} for elem in attributes if elem[1].find("=") != -1])
+        return reduce(lambda acc,value: dict(acc, **value),[{elem[0]:elem[1].split("=")[1]} for elem in attributes if elem[1].find("=") != -1])
     elif type(attributes) == str:
         attributes = [item.split(":") for item in attributes.split(" ")]
         _normalize_attribute_templates(category, attributes)
@@ -23,8 +22,7 @@ def _normalize_attribute_templates(category: str, attributes:str | list) -> dict
 
 def _normalize_attribute_constants(category: str, attributes:str | list) -> list:
     if type(attributes) == list:
-        pre_consts = list(map(lambda item: [elem.split("$")[1] for elem in item if elem.startswith("$")], attributes))
-        return [elem[0] for elem in pre_consts if len(elem) > 0] if len([elem[0] for elem in pre_consts if len(elem) > 0]) > 0 else []
+        return list(filter(lambda value: value,list(map(lambda item: item[0][1:] if item[0].find("$") != -1 else None, attributes))))
     elif type(attributes) == str:
         attributes = [item.split(":") for item in attributes.split(" ")]
         _normalize_attribute_constants(category, attributes)
@@ -45,14 +43,6 @@ def _normalize_attribute_types(category:str, attributes:str | list) -> dict:
     return {}
 
 
-def obj_format(obj_type:str, value=None, template=None):
-    match obj_type:
-        case "list":
-            return value.split(",") if "," in value else [value]
-        case "date":
-            return date_format(template)
-
-
 def _normalize_obj_types(obj_type):
     for key in obj_type:
         match obj_type[key]:
@@ -61,16 +51,14 @@ def _normalize_obj_types(obj_type):
             case "str": obj_type[key] = str
             case "list": obj_type[key] = list
             case "dict": obj_type[key] = dict
-            case "date": obj_type[key] = "date"
-            case "time": obj_type[key] = "time"
-            case "null": obj_type[key] = "null"
+            case "date" | "time" | "null": pass
             case _: obj_type[key] = "undefined"
     return obj_type
 
 
 def normalize_attribute(category: str, attributes: str) -> dict:
     if "title" not in attributes:
-        attributes = "title:str=unknown-title " + attributes
+        attributes = "title:str=null" + attributes
     if "id" not in attributes:
         attributes = trim(lower("id:int " + attributes))
 
