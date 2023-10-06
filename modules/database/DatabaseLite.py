@@ -1,8 +1,8 @@
 from tabulate import tabulate
 from modules.database.Converter import normalize_attribute, normalize_obj
-from modules.globals.Functions import find_path, load_datas, write_datas, create_folder, create_json, delete_json, trim, lower, category_find
-from modules.globals.Errors import NotFoundError, DuplicateError, NoContentError
-from os.path import abspath as alias
+from modules.controllers.functions import find_path, load_datas, write_datas, create_folder, create_json, delete_json, alias, category_find
+from modules.errors.Errors import NotFoundError, DuplicateError, NoContentError
+from functools import reduce
 from os import listdir
 
 
@@ -47,7 +47,7 @@ class DataBase:
 
         self.db_status = False
 
-    # =================== | Func-Protected |================= #
+    # =================== | Protected |================= #
 
     def __init_db(self) -> None:
         if not find_path(self.__catalogs["datas"]):
@@ -75,10 +75,6 @@ class DataBase:
             write_datas(path=self.__paths["types"], datas=self.__temps)
         self.db_status = True
 
-    def __dynamic_loading(self, category:str) -> None:
-        data = load_datas(path=f"{self.__catalogs['datas']}\\{category}.{self.__formats['datas']}")
-        self.__datas[category] = data["datas"]
-
     def __update_attributes(self, category: str, attributes: dict) -> None:
         for key in ["keys","templates","constants","types"]:
             self.__temps[key][category] = attributes[key]
@@ -100,7 +96,25 @@ class DataBase:
             else:
                 return 1
 
-    # =================== | Func-Public |================= #
+    def __global_handler(self, category: str, function_name: str, check_category_data=True, check_category_duplicate=False, check_data_content=False, check_data=False) -> None:
+        experimental = [self.__experimental["dynamic_loading"], self.__experimental["multiple_category"], self.__settings["use_experimental"]]
+
+        self.temp_category = category_find(category, self.temp_category)
+
+        if all([check_category_data, self.temp_category not in self.__temps["category"]]):
+            raise NotFoundError(value=self.temp_category, function_name="")
+
+        if all([check_category_duplicate, self.temp_category in self.__temps["category"]]):
+            raise DuplicateError(value=self.temp_category, function_name=function_name)
+
+        if all([check_data, self.temp_category not in self.__datas, *experimental]):
+            data = load_datas(path=f"{self.__catalogs['datas']}\\{self.temp_category}.{self.__formats['datas']}")
+            self.__datas[self.temp_category] = data["datas"]
+
+        if all([check_data_content, len(self.__datas[self.temp_category]) == 0 if self.temp_category in self.__datas else False]):
+            raise NoContentError(value=self.temp_category, function_name="DataBase - ???")
+
+    # =================== | Public |================= #
 
     def start(self):
         self.__init_db()
@@ -153,9 +167,7 @@ class DataBase:
     # =================== | Func-Create |================= #
 
     def create_category(self, category: str, attributes: str):
-        self.temp_category = category_find(category, self.temp_category)
-        if self.temp_category in self.__temps["category"]:
-            raise DuplicateError(value=self.temp_category, function_name="DataBase - create category")
+        self.__global_handler(category=category, function_name="DataBase - create category", check_category_data=False, check_category_duplicate=True)
 
         attributes = normalize_attribute(category=self.temp_category, attributes=attributes)
         self.__update_attributes(category=self.temp_category, attributes=attributes)
@@ -168,19 +180,12 @@ class DataBase:
             self.__virtual_tree[self.temp_category] = False
 
     def create_obj(self, attributes, category=None):
-        self.temp_category = category_find(category, self.temp_category)
-
-        if self.temp_category not in self.__temps["category"]:
-            raise NotFoundError(value=self.temp_category, function_name="DataBase - create obj")
-
-        if self.temp_category not in self.__datas and self.__experimental["dynamic_loading"] and self.__experimental["multiple_category"]:
-            self.__datas[self.temp_category] = load_datas(path=f"{self.__catalogs['datas']}\\{self.temp_category}.{self.__formats['datas']}")
+        self.__global_handler(category=category, function_name="DataBase - create obj", check_data=True)
 
         templates = self.__temps["templates"][self.temp_category] if self.temp_category in self.__temps["templates"] else None
 
         keys = self.__temps["keys"][self.temp_category] if self.temp_category in self.__temps["keys"] else None
 
-        types_obj2 = self.__temps["types"][self.temp_category].copy()
         types_obj = self.__temps["types"][self.temp_category].copy()
 
         obj = normalize_obj(attributes,types_obj,templates) if templates is not None else normalize_obj(attributes,types_obj)
@@ -189,37 +194,66 @@ class DataBase:
 
         if keys:
             for key in keys:
-                if key not in templates and obj[key] == "null":
-                    return
+                if obj[key] == "null":
+                    raise NoContentError(value=key, function_name="DataBase - create obj")
 
-        self.__datas[category].append(obj)
-        self.__temps["types"][category] = types_obj2
+        self.__datas[self.temp_category].append(obj)
+        self.__temps["types"][self.temp_category] = types_obj
 
         if self.__experimental["virtual_tree"]:
-            self.__virtual_tree[category] = True
+            self.__virtual_tree[self.temp_category] = True
 
-    def create_key_attribute(self, attributes,category=None): ...
+    def create_key_attribute(self, attributes,category=None):
+        self.__global_handler(category=category, function_name="DataBase - delete category", check_data=True)
 
-    def create_template_attribute(self, attributes, category=None): ...
+        keys = reduce(lambda acc, value: dict(acc, **value), [{elem.split(":")[0]:elem.split(":")[1]} for elem in attributes.split(" ")])
+        datas = self.__datas[self.temp_category]
 
-    def create_const_attribute(self, attributes, category=None): ...
+        if set(keys.keys()).intersection(set(self.__temps["keys"][self.temp_category])):
+            raise DuplicateError(value="", function_name="")
+
+        if datas:
+            if set(keys.keys()).intersection(set(datas[0].keys())):
+                raise DuplicateError(value="", function_name="")
+            for data in datas:
+                for key in list(keys.keys()):
+                    data[key] = "undefined"
+        for key in list(keys.keys()):
+            self.__temps["keys"][self.temp_category].append(key)
+
+
+    def create_template_attribute(self, attributes, category=None):
+        self.__global_handler(category=category, function_name="DataBase - delete category", check_data=True)
+
+
+
+
+    def create_const_attribute(self, attributes, category=None):
+        self.__global_handler(category=category, function_name="DataBase - delete category", check_data=True)
+
+
+
 
     # =================== | Func-Change |================= #
 
     def change_obj(self, obj_id:int, attributes:str, category): ...
 
-    def change_template_attribute(self, attributes:str, category): ...
+    def change_template_attribute(self, attributes:str, category):
+        self.__global_handler(category=category, function_name="DataBase - change template attribute")
+
+        attributes = reduce(lambda acc,value: dict(acc, **value),[{attr.split("=")[0]:attr.split("=")[1]} for attr in attributes.split(" ")])
+
+        templates = self.__temps["templates"][self.temp_category] if self.temp_category in self.__temps["templates"] else None
+
+        for key in list(attributes.keys()):
+            if key not in list(templates.keys()) or not templates:
+                raise NotFoundError(value="", function_name="DataBase - change template attribute")
+            templates[key] = attributes[key]
 
     # =================== | Func-Clear |================= #
 
-    def __clear_attributes(self, obj, category):
-        pass
-
     def clear_category(self, category) -> None:
-        self.temp_category = category_find(category, self.temp_category)
-
-        if self.temp_category not in self.__temps["category"]:
-            raise NotFoundError(value=self.temp_category, function_name="DataBase - delete category")
+        self.__global_handler(category=category, function_name="DataBase - clear category")
 
         if self.__experimental["dynamic_loading"] and self.__settings["use_experimental"]:
             del self.__temps["free_id"][self.temp_category][:]
@@ -232,62 +266,72 @@ class DataBase:
             del self.__datas[self.temp_category][:]
 
     def clear_obj(self, obj_id:int, category):
-        self.temp_category = category_find(category, self.temp_category)
-
-        if self.temp_category not in self.__temps["category"]:
-            raise NotFoundError(value=self.temp_category, function_name="DataBase - delete category")
+        self.__global_handler(category=category, function_name="DataBase - clear obj", check_data=True)
 
     # =================== | Func-Delete |================= #
 
     def delete_category(self, category) -> None:
-        self.temp_category = category_find(category, self.temp_category)
+        self.__global_handler(category=category, function_name="DataBase - delete category", check_data=True)
 
-        if self.temp_category not in self.__temps["category"]:
-            raise NotFoundError(value=self.temp_category, function_name="DataBase - delete category")
-
-        if all([self.__experimental["dynamic_loading"], self.__settings["use_experimental"]]):
-            if self.temp_category in self.__datas:
-                del self.__datas[self.temp_category]
-            for key in ["keys","constants","templates","types","free_id"]:
-                if self.temp_category in self.__temps[key]:
-                    del self.__temps[key][self.temp_category]
-            self.__temps["category"].remove(self.temp_category)
-            delete_json(folder_directory=f"{self.__catalogs['datas']}", file_name=f"{self.temp_category}.{self.__formats['datas']}")
-            self.__virtual_tree[self.temp_category] = False
-        else:
+        if self.temp_category in self.__datas:
             del self.__datas[self.temp_category]
 
+        for key in ["keys","constants","templates","types","free_id"]:
+            if self.temp_category in self.__temps[key]:
+                del self.__temps[key][self.temp_category]
+        self.__temps["category"].remove(self.temp_category)
+        delete_json(folder_directory=f"{self.__catalogs['datas']}", file_name=f"{self.temp_category}.{self.__formats['datas']}")
+        self.__virtual_tree[self.temp_category] = False
+
     def delete_obj(self, obj_id:int, category) -> None:
-        self.temp_category = category_find(category,self.temp_category)
-
-        if self.temp_category not in self.__temps["category"]:
-            raise NotFoundError(value=category, function_name="DataBase - delete obj")
-
-        experimental = [self.__experimental["dynamic_loading"], self.__experimental["multiple_category"], self.__settings["use_experimental"]]
-
-        if self.temp_category not in self.__datas and all(experimental):
-            self.__datas[self.temp_category] = load_datas(path=f"{self.__catalogs['datas']}\\{self.temp_category}.{self.__formats['datas']}")
-
-        if len(self.__datas[category]) == 0:
-            raise NoContentError(value=category, function_name="DataBase - delete obj")
-
+        self.__global_handler(category=category, function_name="DataBase - delete obj", check_data=True, check_data_content=True)
         self.__datas[category] = list(filter(lambda elem: elem["id"] != obj_id, self.__datas[category]))
         self.__virtual_tree[category] = True
 
-    def delete_key_attribute(self, attributes:str, category=None): ...
+    def delete_key_attribute(self, attributes:str, category=None):
+        self.__global_handler(category=category, function_name="DataBase - delete keys")
 
-    def delete_template_attribute(self, attributes:str, category=None): ...
+        attributes = attributes.split(",")
 
-    def delete_const_attribute(self, attributes:str, category=None): ...
+        keys = self.__temps["keys"][self.temp_category] if self.temp_category in self.__temps["keys"] else None
+
+        for key in attributes:
+            if key not in keys or not keys:
+                raise NotFoundError(value="", function_name="DataBase - delete template attribute")
+            keys.remove(key)
+
+    def delete_template_attribute(self, attributes:str, category=None):
+        self.__global_handler(category=category, function_name="DataBase - delete template")
+
+        attributes = attributes.split(",")
+
+        templates = self.__temps["templates"][self.temp_category] if self.temp_category in self.__temps["templates"] else None
+
+        for key in attributes:
+            if key not in list(templates.keys()) or not templates:
+                raise NotFoundError(value="", function_name="DataBase - delete template attribute")
+            del templates[key]
+
+    def delete_const_attribute(self, attributes:str, category=None):
+        self.__global_handler(category=category, function_name="DataBase - delete keys")
+
+        attributes = attributes.split(",")
+
+        consts = self.__temps["constants"][self.temp_category] if self.temp_category in self.__temps["constants"] else None
+
+        for key in attributes:
+            if key not in consts or not consts:
+                raise NotFoundError(value="", function_name="DataBase - delete template attribute")
+            consts.remove(key)
 
     # =================== | Func-Additional |================= #
 
     def get_datas(self,category=None):
-        category = self.temp_category if category is None or category == "" else category
-        if category in self.__temps["category"]:
-            print(tabulate(self.__datas[category], headers="keys"))
-        elif category is None or category == "":
-            for category in self.__datas:
-                print(tabulate(self.__datas[category],headers="keys"))
+        self.temp_category = category_find(category, self.temp_category)
+        if all([self.__settings["use_experimental"], self.__experimental["multiple_category"], category not in self.__datas]):
+            data = load_datas(path=f"{self.__catalogs['datas']}\\{self.temp_category}.{self.__formats['datas']}")
+            self.__datas[self.temp_category] = data["datas"]
+        if self.temp_category in self.__temps["category"]:
+            print(tabulate(self.__datas[self.temp_category], headers="keys"))
         else:
-            print(f"Category: [{category}] Not Found!")
+            raise NotFoundError(value=self.temp_category, function_name="DataBase - get datas")
