@@ -1,4 +1,6 @@
 venv
-assets/datas/*
-assets/types/*
-assets/backup/*
+.idea
+__pycache__
+assets/public/datas/*
+assets/public/types/*
+assets/private/backup/*
