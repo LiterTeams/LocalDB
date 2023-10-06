@@ -1,6 +1,6 @@
 from modules.fileworker.FileWorker import JsonFileWorker
 from modules.database.DatabaseLite import DataBase
-from modules.globals.Functions import command
+from modules.controllers.functions import command
 
 
 def main():
@@ -17,10 +17,25 @@ def main():
             match cmd:
                 case "create.category":
                     db_app.create_category(category=input("Category: "), attributes=input("Attributes: "))
-                # case "clear.category":
-                #     db_app.clear_category(category=input("Category: "))
+                case "clear.category":
+                    db_app.clear_category(category=input("Category: "))
                 case "delete.category":
                     db_app.delete_category(category=input("Category: "))
+
+                case "create.key":
+                    db_app.create_key_attribute(category=input("Category: "), attributes=input("Attributes: "))
+                case "delete.key":
+                    db_app.delete_key_attribute(category=input("Category: "), attributes=input("Keys: "))
+
+                case "create.template": ...
+
+                case "change.template":
+                    db_app.change_template_attribute(category=input("Category: "), attributes=input("Attributes: "))
+                case "del.template":
+                    db_app.delete_template_attribute(category=input("Category: "), attributes=input("Templates: "))
+
+                case "delete.constant":
+                    db_app.delete_const_attribute(category=input("Category: "), attributes=input("Constants: "))
 
                 case "create.obj":
                     db_app.create_obj(category=input("Category: "), attributes=input("Attributes: "))
