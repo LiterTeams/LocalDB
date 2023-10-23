@@ -1,7 +1,6 @@
 from os import remove, makedirs
 from os.path import abspath, exists, getsize
 from json import dump, load
-from typing import Literal
 from ..errors.Errors import NotFoundError
 import datetime
 
@@ -44,37 +43,48 @@ def command(text:str) -> str:
     return lower(trim(text))
 
 
-def load_datas(path:str):
+def load_datas(path:str, file_name:str | None = None, file_format:str | None = None):
     try:
-        with open(path, "r") as file:
-            return load(file)
+        if all([file_name, file_format]):
+            with open(f"{path}\\{file_name}.{file_format}", "r") as file:
+                return load(file)
+        else:
+            with open(path, "r") as file:
+                return load(file)
     except FileNotFoundError:
         raise NotFoundError(value=path, function_name="load datas")
 
 
-def find_path(path:str):
-    return exists(path)
+def find_path(path:str): return exists(path)
 
 
-def alias(path:str):
-    return abspath(path)
+def alias(path:str): return abspath(path)
 
 
-def write_datas(path:str, datas:dict):
+def write_datas(datas:dict, path:str, file_name:str | None = None, file_format:str | None = None):
     try:
-        with open(path, "w") as file:
-            dump(datas, file, indent=2, ensure_ascii=False)
+        if all([file_name, file_format]):
+            with open(f"{path}\\{file_name}.{file_format}", "w") as file:
+                dump(datas, file, indent=None, separators=(",",":"), ensure_ascii=False)
+        else:
+            with open(path, "w") as file:
+                dump(datas, file, indent=None, separators=(",",":"), ensure_ascii=False)
     except FileNotFoundError:
         raise NotFoundError(value=path, function_name="write datas")
 
 
-def create_json(folder_directory:str,file_name:str):
-    path = f"{folder_directory}/{file_name}.json"
-    write_datas(path=path, datas={})
+def create_file(folder_directory:str, file_name:str, file_format:str):
+    try:
+        with open(f"{folder_directory}\\{file_name}.{file_format}", "w") as file:
+            file.write("{}")
+    except FileNotFoundError:
+        print("Error")
 
 
-def delete_json(folder_directory:str,file_name:str):
-    remove(f"{folder_directory}\\{file_name}")
+def create_json(folder_directory:str,file_name:str): write_datas(path=f"{folder_directory}\\{file_name}.json", datas={})
+
+
+def delete_json(folder_directory:str,file_name:str): remove(f"{folder_directory}\\{file_name}")
 
 
 def create_folder(folder_directory:str,folder_name:str):

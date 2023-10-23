@@ -51,8 +51,12 @@ def _normalize_obj_attribute(attributes: dict, obj_template:dict, auto_complete:
     for key in obj_keys:
         if key in attributes:
             obj_type = obj_template[key]
-            if obj_type in [int, float, str]:
+            if obj_type is str:
                 obj_template[key] = attributes[key]
+            elif obj_type is int:
+                obj_template[key] = int(attributes[key])
+            elif obj_type is float:
+                obj_template[key] = float(attributes[key])
             elif obj_type is list:
                 obj_template[key] = attributes[key].split(",")
             elif obj_type is dict:
@@ -64,7 +68,10 @@ def _normalize_obj_attribute(attributes: dict, obj_template:dict, auto_complete:
             else:
                 obj_template[key] = "undefined"
         elif key in auto_complete:
-            obj_template[key] = date_format(auto_complete[key]) if key == "date" else auto_complete[key]
+            if key == "date":
+                obj_template[key] = date_format(auto_complete[key])
+            else:
+                obj_template[key] = auto_complete[key].split(",") if obj_template[key] is list else auto_complete[key]
         else:
             obj_template[key] = "undefined"
 

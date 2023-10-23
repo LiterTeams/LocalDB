@@ -1,6 +1,36 @@
 # Updates Log Rus 
 
-[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=800&duration=3000&pause=5000&width=640&height=64&lines=Local+DataBase+-+Experimental+Version+1.4+%7C+6.10.2023)]()
+[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=800&duration=3000&pause=5000&width=640&height=64&lines=Local+DataBase+-+Beta+Version+1.0+%7C+10.10.2023)]()
+
+### Перенесён весь функционал старой версии! </br>
+
+### Добавлено
+> Добавление шаблона </br>
+> Добавление константы </br> 
+> Изменение объекта </br>
+> Очистка объекта </br>
+
+### Изменения
+> Исправлена проблема ключей и шаблонов, связанная с тем, что их типы не записывались. </br>
+> Теперь экспериментальный функционал нельзя отключить. </br>
+> Упрощён поиск свободных id. </br>
+> Для корректной работы нужен Python 3.12 </br>
+> Некоторая часть функций перенесена на язык Rust
+
+### Недоработки
+> Возможны дубликаты переменных, если вручную создавать константу, шаблон или ключ. </br>
+
+### На стадии разработки 
+> Оптимизация загрузки большого кол-во данных. </br>
+> MongoDB
+> MySQLDB
+> PostgresSQLDB
+
+### Заброшено
+> Сайт для просмотра своих данных </br>
+> UI </br>
+
+[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=800&duration=3000&pause=5500&width=640&height=64&lines=Local+DataBase+-+Experimental+Version+1.4+%7C+6.10.2023)]()
 
 ### Уже перенесено свыше 70% функционала из прошлой версии! </br>
 
@@ -12,13 +42,13 @@
 > Удаление констант </br>
 
 ### Изменения
-> Упрощена функция нормализации типов и объекта </br>
-> Дублирующийся код класса Database перенесён в отдельный метод </br>
+> Упрощена функция нормализации типов и объекта. </br>
+> Дублирующийся код класса Database перенесён в отдельный метод. </br>
 
 ### Недоработки
 > Возможно ключевые поля не сработают
 
-[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=800&duration=3000&pause=5500&width=640&height=64&lines=Local+DataBase+-+Experimental+Version+1.2+%7C+2.10.2023)]()
+[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=800&duration=3000&pause=6000&width=640&height=64&lines=Local+DataBase+-+Experimental+Version+1.2+%7C+2.10.2023)]()
 
 ### Добавлено
 > Очистка категории </br>
@@ -37,7 +67,7 @@
 ### Недоработки
 > Отсутствует перехват более 90% ошибок </br>
 
-[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=800&duration=3000&pause=6000&width=640&height=64&lines=Local+DataBase+-+Experimental+Version+1.0+%7C+1.10.2023)]() </br>
+[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=800&duration=3000&pause=6500&width=640&height=64&lines=Local+DataBase+-+Experimental+Version+1.0+%7C+1.10.2023)]() </br>
 
 
 ### Нововведения

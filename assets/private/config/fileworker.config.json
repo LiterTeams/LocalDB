@@ -1,4 +1,4 @@
 {
-  "configs_name": ["db_lite.config"],
+  "configs_name": ["db_lite.config","sqlite.config"],
   "version": "Beta 1.0"
 }

@@ -1,19 +1,16 @@
-.Python
-.idea
-.venv
+/target
+
+# Byte-compiled / optimized / DLL files
 __pycache__/
 .pytest_cache/
 *.py[cod]
-assets/public/datas/*
-assets/public/types/*
-assets/private/backup/*
-
-/target
 
 # C extensions
 *.so
 
 # Distribution / packaging
+.Python
+.venv/
 env/
 bin/
 build/

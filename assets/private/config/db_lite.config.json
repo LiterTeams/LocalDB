@@ -5,24 +5,8 @@
         "datas": "public\\datas",
         "types": "public\\types"
     },
-    "file_formats": {
-        "backup": "json",
-        "datas": "json",
-        "types": "json"
-    },
-    "file_names": {
-        "datas": "db_lite.datas",
-        "types": "db_lite.types"
-    },
     "settings": {
-        "lang": "Eng",
-        "use_backup": true,
-        "use_experimental": true
+        "lang": "Eng"
     },
-    "experimental": {
-        "multiple_category": true,
-        "dynamic_loading": true,
-        "virtual_tree": true
-    },
-    "version": "experimental version 1.4"
+    "version": "beta version 1.0"
 }
